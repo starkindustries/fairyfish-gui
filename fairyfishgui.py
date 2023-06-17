@@ -7,7 +7,35 @@ import re
 
 import PySimpleGUI as sg
 import pyffish
+import logging
 
+
+def instantiate_logger():
+    logger = logging.getLogger('logger')
+    logger.setLevel(logging.DEBUG)
+
+    file_handler = logging.FileHandler('debug.log')
+    stream_handler = logging.StreamHandler()
+
+    # Create a formatter and add it to the handlers
+    formatter = logging.Formatter(
+        "[%(asctime)s] [%(filename)s:%(lineno)d] [%(funcName)s] [%(levelname)s] %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S"  # Removes the milliseconds from the timestamp
+    )
+
+    file_handler.setFormatter(formatter)
+    stream_handler.setFormatter(formatter)
+
+    # Add the handlers to the logger
+    logger.addHandler(file_handler)
+    logger.addHandler(stream_handler)
+
+    # Test logger
+    logger.debug('Logger instantiated successfully!')
+    return logger
+
+
+logger = instantiate_logger()
 
 MAX_FILES = 12
 MAX_RANKS = 10
@@ -250,7 +278,7 @@ class Board():
     def render_square(key):
         font_size = min(sg.Window.get_screen_size()) // 50
         font_size_sub = font_size // 2
-        layout = [sg.Button(size=(3, 2), pad=(0, 0), font='Any {}'.format(font_size), key=key)]
+        layout = [sg.Button(size=(3, 1), pad=(0, 0), font='Any {}'.format(font_size), key=key)]
         if key[0] == POCKET:
             # +---+---+---+---+
             # | P | N |   | R |
@@ -430,6 +458,7 @@ class FairyGUI():
     def load_engine(self, engine_path):
         self.quit_engine()
         self.engine = Engine([engine_path], options=self.engine_settings)
+        logger.debug(f"Loading engine: {self.engine}")
         def read_output():
             def format_score(score):
                 return '#{}'.format(score[1]) if score[0] == 'mate' else '{:.2f}'.format(int(score[1]) / 100) if score[0] == 'cp' else None
@@ -511,8 +540,11 @@ class FairyGUI():
                 if settings:
                     self.set_engine_options(settings)
             elif button == '_newgame_':
+                logger.debug("Starting new game..")
                 variant = self.popup(sg.Listbox, 'Variant', pyffish.variants(), size=(30, 20))
+                logger.debug(f"Selected variant: {variant}")
                 if variant:
+                    logger.debug(f"Updating board with selected variant: {variant[0]}")
                     self.update_board(variant=variant[0])
             elif button == '_set_fen_':
                 fen = sg.popup_get_text('Set FEN', default_text=self.board.state.fen(), size=(80, 20))
