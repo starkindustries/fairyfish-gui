@@ -35,7 +35,7 @@ def instantiate_logger():
     return logger
 
 
-logger = instantiate_logger()
+logger = None
 
 MAX_FILES = 12
 MAX_RANKS = 10
@@ -534,12 +534,15 @@ class FairyGUI():
                 self.quit_engine()
                 exit()
             elif button == 'About...':
+                logger.debug("'About' menu item pressed..")
                 sg.popup('FairyFishGUI by Fabian Fichter\n\nhttps://github.com/ianfab/FairyFishGUI', title='About')
             elif button == 'Engine Settings':
+                logger.debug("'Engine Settings' menu item pressed..")
                 settings = self.engine_settings_panel()
                 if settings:
                     self.set_engine_options(settings)
             elif button == '_newgame_':
+                logger.debug("'New Game' button pressed..")
                 logger.debug("Starting new game..")
                 variant = self.popup(sg.Listbox, 'Variant', pyffish.variants(), size=(30, 20))
                 logger.debug(f"Selected variant: {variant}")
@@ -547,32 +550,47 @@ class FairyGUI():
                     logger.debug(f"Updating board with selected variant: {variant[0]}")
                     self.update_board(variant=variant[0])
             elif button == '_set_fen_':
+                logger.debug("'Set FEN' button pressed..")
                 fen = sg.popup_get_text('Set FEN', default_text=self.board.state.fen(), size=(80, 20))
                 if fen:
                     self.update_board(fen=fen)
             elif button == '_reset_':
+                logger.debug("'Reset' button pressed..")
                 self.update_board(variant=self.board.state.variant)
             elif button == '_undo_':
+                logger.debug("'Undo' button pressed..")
                 self.update_board(undo=True)
             elif button == '_variants_':
+                logger.debug("'Load variants' button pressed..")
                 variant_path = sg.popup_get_file('Select variants.ini', file_types=(('variant configuration file', '*.ini'),))
                 if variant_path:
                     with open(variant_path) as variants_ini:
                         pyffish.load_variant_config(variants_ini.read())
                     if self.engine:
                         self.engine.setoption('VariantPath', variant_path)
-            elif button == '_engine_':
+            elif button == '_engine_':  # 'Load engine' button
+                logger.debug("'Load engine' button pressed..")
                 engine_path = sg.popup_get_file('Select engine')
                 if engine_path:
                     self.load_engine(engine_path)
-            elif button == '_toggle_':
+            elif button == '_toggle_':  # 'Engine on/off' button
+                logger.debug("'Engine on/off' button pressed..")
                 if self.engine:
+                    def paused_state():
+                        return "PAUSED" if self.engine.paused else "NOT PAUSED"
+                    logger.debug(f"Toggling engine..")
                     self.engine.toggle()
+                    logger.debug(f"Engine new state: {paused_state()}.")
+                    continue
+                logger.debug("Engine is NOT set..")
             elif type(button) is tuple:
+                logger.debug(f"Board square [{button}] pressed..")
                 self.process_square(button)
             elif button == '_move_':
+                logger.debug("'Move' button pressed..")
                 self.process_square(force_move=True)
 
 
 if __name__ == '__main__':
+    logger = instantiate_logger()
     FairyGUI().run()
